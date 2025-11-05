@@ -1,4 +1,6 @@
-# Welcome to your Lovable project
+# 🌙 NafsAI - Assistant Spirituel Islamique
+
+> Assistant spirituel et coach de bien-être pour concentration TDAH, régulation émotionnelle et pratique spirituelle islamique.
 
 ## Project info
 
