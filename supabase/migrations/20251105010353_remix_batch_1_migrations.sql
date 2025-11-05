@@ -1,4 +1,6 @@
 
+-- Migration: 20251105004821
+
 -- Migration: 20251105002116
 -- ============================================
 -- NAFSAI - Base Schema for MVP
@@ -227,3 +229,4 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_tasks_updated_at
 BEFORE UPDATE ON tasks
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
