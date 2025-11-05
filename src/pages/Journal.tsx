@@ -1,13 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-
-// TODO: Implement full journal functionality with BlackBox/Claude
-// See INSTRUCTIONS_FOR_BLACKBOX.md for detailed specs
+import { JournalEntryComponent, JournalEntry } from "@/components/JournalEntry";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Journal() {
   const navigate = useNavigate();
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadEntries();
+  }, []);
+
+  const loadEntries = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("journals")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setEntries(data || []);
+    } catch (error) {
+      console.error("Error loading entries:", error);
+      toast.error("Erreur lors du chargement");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("journals")
+        .insert({
+          user_id: user.id,
+          ...entry,
+        } as any);
+
+      if (error) throw error;
+      toast.success("Entrée ajoutée 📝");
+      loadEntries();
+    } catch (error) {
+      console.error("Error saving entry:", error);
+      toast.error("Erreur lors de la sauvegarde");
+    }
+  };
+
+  const handleEdit = async (id: string, updates: Partial<JournalEntry>) => {
+    try {
+      const { error } = await supabase
+        .from("journals")
+        .update(updates as any)
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Entrée modifiée ✏️");
+      loadEntries();
+    } catch (error) {
+      console.error("Error editing entry:", error);
+      toast.error("Erreur lors de la modification");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("journals")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Entrée supprimée 🗑️");
+      loadEntries();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Erreur lors de la suppression");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,16 +105,16 @@ export default function Journal() {
 
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="spiritual-card p-12 text-center">
-            <div className="text-6xl mb-6">📝</div>
-            <h2 className="text-2xl font-bold mb-4">Journal en Construction</h2>
-            <p className="text-muted-foreground mb-6">
-              Le composant journal détaillé sera créé avec BlackBox/Claude.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Fonctionnalités à venir : Formulaire d'entrée, liste des entrées, filtres par humeur, compteur de mots.
-            </p>
-          </div>
+          {loading ? (
+            <div className="text-center py-12">Chargement...</div>
+          ) : (
+            <JournalEntryComponent 
+              entries={entries}
+              onSave={handleSave}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </div>
       </main>
     </div>
